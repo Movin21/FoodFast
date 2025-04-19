@@ -22,7 +22,7 @@ app.use(
     target: process.env.AUTH_SERVICE_URL,
     changeOrigin: true,
     pathRewrite: {
-      "^/api/auth": "/", // maps /api/auth/register → /api/register in auth-service
+      "^/api/auth": "/", 
     },
   })
 );

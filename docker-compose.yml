@@ -1,0 +1,87 @@
+version: "3.8"
+
+services:
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - AUTH_SERVICE_URL=http://auth-service:5001
+      - RESTAURANT_SERVICE_URL=http://restaurant-service:5002
+      - ORDER_SERVICE_URL=http://order-service:5003
+      - DELIVERY_SERVICE_URL=http://delivery-service:5004
+      - PAYMENT_SERVICE_URL=http://payment-service:5005
+      - NOTIFICATION_SERVICE_URL=http://notification-service:5006
+    depends_on:
+      - auth-service
+      - restaurant-service
+      - order-service
+      - delivery-service
+      - payment-service
+      - notification-service
+
+  # Auth Service
+  auth-service:
+    build: ./auth-services
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - CONNECTION_STRING=mongodb+srv://Movin21:test1234@cluster0.iupkz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      - JWT_SECRET=secret
+      - JWT_EXPIRES_IN=1d
+
+  # Restaurant Service
+  restaurant-service:
+    build: ./restaurant-service
+    ports:
+      - "5002:5002"
+    environment:
+      - PORT=5002
+      - CONNECTION_STRING=mongodb+srv://Movin21:test1234@cluster0.iupkz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+
+  # Order Service
+  order-service:
+    build: ./order-service
+    ports:
+      - "5003:5003"
+    environment:
+      - PORT=5003
+      - CONNECTION_STRING=mongodb+srv://Movin21:test1234@cluster0.iupkz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+
+  # Delivery Service
+  delivery-service:
+    build: ./delivery-service
+    ports:
+      - "5004:5004"
+    environment:
+      - PORT=5004
+      - CONNECTION_STRING=mongodb+srv://Movin21:test1234@cluster0.iupkz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      - GOOGLE_MAPS_API_KEY=AIzaSyD-v327RRVZySPUiCCoGGitHNGTP53PimQ
+      - AUTH_SERVICE_URL=http://auth-service:5001
+
+  # Payment Service
+  payment-service:
+    build: ./payment-service
+    ports:
+      - "5005:5005"
+    environment:
+      - PORT=5005
+      - CONNECTION_STRING=mongodb+srv://Movin21:test1234@cluster0.iupkz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      - STRIPE_SECRET_KEY=sk_test_51RF9dH4JSs0z3pO616M4AWyvhDj5812ZlMHn6temffW2cZtxyHmdcUNIPdryU6jsacOG9dGO24qEN4gxA48xU5oO00CLFagYsZ
+
+  # Notification Service
+  notification-service:
+    build: ./notification-microservice
+    ports:
+      - "5006:5006"
+    environment:
+      - PORT=5006
+      - MAILGUN_USER=postmaster@sandbox12345.mailgun.org
+      - MAILGUN_PASS=your-mailgun-smtp-password
+      - MAILGUN_FROM="Your App <you@yourdomain.com>"
+      - TWILIO_SID=AC7ce545644727177ba865f897fa12a1d9
+      - TWILIO_AUTH_TOKEN=261f43938fabf423c9b317e04e8794f7
+      - TWILIO_PHONE=+13343842742

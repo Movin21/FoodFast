@@ -31,11 +31,16 @@ const CheckoutForm = () => {
   };
 
   const orderDetails = {
-    ...fallbackOrder,
-    ...reduxOrder,
+    amount: reduxOrder.amount ?? fallbackOrder.amount,
+    orderId: reduxOrder.orderId ?? fallbackOrder.orderId,
+    customerName: reduxOrder.customerName ?? fallbackOrder.customerName,
+    customerAddress:
+      reduxOrder.customerAddress ?? fallbackOrder.customerAddress,
+    customerPhone: reduxOrder.customerPhone ?? fallbackOrder.customerPhone,
+    restaurantName: reduxOrder.restaurantName ?? fallbackOrder.restaurantName,
+    restaurantAddress:
+      reduxOrder.restaurantAddress ?? fallbackOrder.restaurantAddress,
   };
-
-  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +51,7 @@ const CheckoutForm = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/payment",
+        "http://localhost:8000/api/payment",
         orderDetails
       );
       const clientSecret = res.data.clientSecret;
@@ -95,7 +100,7 @@ const CheckoutForm = () => {
 
   if (success) {
     return (
-      <div className="max-w-md mx-auto p-8 shadow-lg rounded-lg bg-white animate-in fade-in slide-in-from-bottom-4 mt-10">
+      <div className="max-w-md mx-auto p-8 shadow-lg rounded-lg bg-white animate-in fade-in slide-in-from-bottom-4 my-10">
         <div className="text-center">
           <div className="mx-auto w-12 h-12 mb-4 rounded-full bg-green-100 flex items-center justify-center">
             <CheckCircle2 className="w-6 h-6 text-green-600" />
