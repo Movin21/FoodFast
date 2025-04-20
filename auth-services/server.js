@@ -2,6 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const driverAuthRoutes = require("./routes/driverRoute");
+const customerAuthRoutes = require("./routes/customerRoute");
 const connectDB = require("./config/dbConnection");
 
 dotenv.config();
@@ -22,6 +23,7 @@ app.get("/health", (req, res) => {
 
 // Routes
 app.use("/drivers", driverAuthRoutes);
+app.use("/customers", customerAuthRoutes);
 
 // Start server
 app.listen(PORT, () => {

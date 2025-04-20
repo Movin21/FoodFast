@@ -1,19 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import {
   ArrowLeftIcon,
   CreditCardIcon,
   MapPinIcon,
   CheckIcon,
+  TruckIcon,
+  InfoIcon,
 } from "lucide-react";
-import { useCart } from "../context/CartContext";
+import { RootState } from "../redux/store";
 import CartItem from "../components/CartItem";
 import Button from "../components/Button";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+import { placeOrder } from "../services/orderService";
+import { clearCart } from "../redux/slices/cartSlice";
+import { setOrderDetails } from "../redux/slices/orderSlice";
+
 const Checkout: React.FC = () => {
-  const { cartItems, cartTotal, clearCart } = useCart();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const cartItems = useSelector((state: RootState) => state.cart.items);
+  const cartTotal = useSelector((state: RootState) => state.cart.total);
+  
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOrderComplete, setIsOrderComplete] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState("Credit Card");
+  const [deliveryAddress, setDeliveryAddress] = useState("123 Main Street, Apt 4B, Anytown, CA 12345");
+  const [contactNumber, setContactNumber] = useState("555-123-4567");
+  const [specialInstructions, setSpecialInstructions] = useState("");
+
   // Group cart items by restaurant
   const itemsByRestaurant = cartItems.reduce(
     (acc, item) => {
@@ -34,24 +51,69 @@ const Checkout: React.FC = () => {
       }
     >
   );
+
   // Calculate fees
   const deliveryFee = 2.99;
   const serviceFee = cartTotal * 0.05; // 5% service fee
   const tax = cartTotal * 0.08; // 8% tax
   const totalAmount = cartTotal + deliveryFee + serviceFee + tax;
-  const handlePlaceOrder = () => {
-    setIsProcessing(true);
-    // Simulate API call
-    setTimeout(() => {
+
+  const handlePlaceOrder = async () => {
+    if (cartItems.length === 0) return;
+
+    try {
+      setIsProcessing(true);
+      setOrderError(null);
+
+      // Get the first restaurant's ID since we currently support one restaurant per order
+      const restaurantId = cartItems[0].restaurantId;
+
+      // Create order request
+      const orderData = {
+        items: cartItems,
+        restaurantId,
+        totalAmount,
+        deliveryAddress,
+        contactNumber,
+        paymentMethod,
+        specialInstructions,
+      };
+
+      // Call the order service
+      const response = await placeOrder(orderData);
+
+      if (response.success) {
+        // Store order details in Redux
+        dispatch(setOrderDetails({
+          orderId: response.order._id,
+          amount: totalAmount * 100, // Convert to cents for Stripe
+          customerName: "Customer Name", // In a real app, get from user profile
+          customerAddress: deliveryAddress,
+          customerPhone: contactNumber,
+          restaurantName: cartItems[0].restaurantName,
+          restaurantAddress: "Restaurant Address", // In a real app, get from restaurant data
+        }));
+
+        // Clear the cart
+        dispatch(clearCart());
+        
+        setIsOrderComplete(true);
+
+        // Redirect to home after a delay
+        setTimeout(() => {
+          navigate("/");
+        }, 3000);
+      } else {
+        setOrderError("Failed to place order. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error placing order:", error);
+      setOrderError("An error occurred while placing your order. Please try again.");
+    } finally {
       setIsProcessing(false);
-      setIsOrderComplete(true);
-      clearCart();
-      // Redirect to home after a delay
-      setTimeout(() => {
-        navigate("/");
-      }, 3000);
-    }, 2000);
+    }
   };
+
   if (cartItems.length === 0 && !isOrderComplete) {
     return (
       <div className="bg-gray-50 min-h-screen py-12">
@@ -71,6 +133,7 @@ const Checkout: React.FC = () => {
       </div>
     );
   }
+
   if (isOrderComplete) {
     return (
       <div className="bg-gray-50 min-h-screen py-12">
@@ -92,6 +155,7 @@ const Checkout: React.FC = () => {
       </div>
     );
   }
+
   return (
     <div className="bg-gray-50 min-h-screen py-8">
       <div className="container mx-auto px-4">
@@ -131,6 +195,7 @@ const Checkout: React.FC = () => {
                 )
               )}
             </div>
+            
             {/* Delivery Address */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
@@ -148,74 +213,126 @@ const Checkout: React.FC = () => {
                 />
                 <div>
                   <p className="text-gray-800 font-medium">Home</p>
-                  <p className="text-gray-600">123 Main Street, Apt 4B</p>
-                  <p className="text-gray-600">Anytown, CA 12345</p>
+                  <p className="text-gray-600">{deliveryAddress}</p>
                 </div>
               </div>
             </div>
+            
             {/* Payment Method */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-lg text-gray-800">
                   Payment Method
                 </h3>
-                <button className="text-green-600 hover:text-green-700 text-sm font-medium">
-                  Change
-                </button>
               </div>
-              <div className="flex items-center">
-                <CreditCardIcon size={20} className="text-gray-500 mr-3" />
-                <div>
-                  <p className="text-gray-800 font-medium">
-                    Visa ending in 1234
-                  </p>
-                  <p className="text-gray-600 text-sm">Expires 12/25</p>
+              <div className="space-y-3">
+                <div 
+                  className={`border rounded-lg p-4 flex items-center cursor-pointer ${
+                    paymentMethod === "Credit Card" ? "border-green-500 bg-green-50" : "border-gray-200"
+                  }`}
+                  onClick={() => setPaymentMethod("Credit Card")}
+                >
+                  <div className="h-5 w-5 rounded-full border mr-3 flex items-center justify-center">
+                    {paymentMethod === "Credit Card" && (
+                      <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                    )}
+                  </div>
+                  <CreditCardIcon size={20} className="text-gray-600 mr-3" />
+                  <span className="font-medium">Credit Card</span>
+                </div>
+                
+                <div 
+                  className={`border rounded-lg p-4 flex items-center cursor-pointer ${
+                    paymentMethod === "Cash on Delivery" ? "border-green-500 bg-green-50" : "border-gray-200"
+                  }`}
+                  onClick={() => setPaymentMethod("Cash on Delivery")}
+                >
+                  <div className="h-5 w-5 rounded-full border mr-3 flex items-center justify-center">
+                    {paymentMethod === "Cash on Delivery" && (
+                      <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                    )}
+                  </div>
+                  <TruckIcon size={20} className="text-gray-600 mr-3" />
+                  <span className="font-medium">Cash on Delivery</span>
                 </div>
               </div>
             </div>
+            
+            {/* Special Instructions */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <div className="flex items-center mb-4">
+                <InfoIcon size={20} className="text-gray-600 mr-2" />
+                <h3 className="font-bold text-lg text-gray-800">
+                  Special Instructions
+                </h3>
+              </div>
+              <textarea
+                className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                rows={3}
+                placeholder="Add any special instructions for your order..."
+                value={specialInstructions}
+                onChange={(e) => setSpecialInstructions(e.target.value)}
+              />
+            </div>
           </div>
+          
           {/* Right Column - Order Summary */}
           <div className="md:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24">
+            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-20">
               <h3 className="font-bold text-lg text-gray-800 mb-4">
                 Order Summary
               </h3>
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
-                  <span>${cartTotal.toFixed(2)}</span>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="font-medium">${cartTotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Delivery Fee</span>
-                  <span>${deliveryFee.toFixed(2)}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Delivery Fee</span>
+                  <span className="font-medium">${deliveryFee.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Service Fee</span>
-                  <span>${serviceFee.toFixed(2)}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Service Fee</span>
+                  <span className="font-medium">${serviceFee.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Tax</span>
-                  <span>${tax.toFixed(2)}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tax</span>
+                  <span className="font-medium">${tax.toFixed(2)}</span>
                 </div>
-                <div className="border-t border-gray-200 pt-3 mt-3">
-                  <div className="flex justify-between font-bold text-gray-800">
+                <div className="border-t border-dashed pt-3 mt-3">
+                  <div className="flex justify-between font-bold text-gray-900 text-base">
                     <span>Total</span>
                     <span>${totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
+
+              {orderError && (
+                <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-lg">
+                  {orderError}
+                </div>
+              )}
+
               <Button
                 variant="primary"
                 fullWidth
-                size="lg"
-                disabled={isProcessing}
+                className="mt-6"
                 onClick={handlePlaceOrder}
+                disabled={isProcessing}
               >
-                {isProcessing ? "Processing..." : "Place Order"}
+                {isProcessing ? (
+                  <div className="flex items-center justify-center">
+                    <LoadingSpinner size="sm" />
+                    <span className="ml-2">Processing...</span>
+                  </div>
+                ) : (
+                  "Place Order"
+                )}
               </Button>
-              <p className="text-xs text-gray-500 text-center mt-4">
+              
+              <p className="text-xs text-gray-600 text-center mt-4">
                 By placing your order, you agree to our Terms of Service and
-                Privacy Policy
+                Privacy Policy.
               </p>
             </div>
           </div>
@@ -224,4 +341,5 @@ const Checkout: React.FC = () => {
     </div>
   );
 };
+
 export default Checkout;
