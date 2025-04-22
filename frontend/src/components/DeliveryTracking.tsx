@@ -111,7 +111,7 @@ const DeliveryTrackingPage = ({
 
   const socketRef = useRef<Socket | null>(null);
   const orderId =
-    new URLSearchParams(window.location.search).get("orderId") || "ORDER12";
+    new URLSearchParams(window.location.search).get("orderId") || "ORDER1";
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: "AIzaSyD-v327RRVZySPUiCCoGGitHNGTP53PimQ",
@@ -123,23 +123,31 @@ const DeliveryTrackingPage = ({
     if (isLoaded && window.google) {
       setIcons({
         bikerIcon: {
-          url: "https://maps.google.com/mapfiles/ms/icons/motorcycling.png",
+          url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
           scaledSize: new window.google.maps.Size(40, 40),
-          anchor: new window.google.maps.Point(20, 20),
+          anchor: new window.google.maps.Point(20, 40),
         },
         restaurantIcon: {
-          url: "https://maps.google.com/mapfiles/ms/icons/restaurant.png",
+          url: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
           scaledSize: new window.google.maps.Size(40, 40),
-          anchor: new window.google.maps.Point(20, 20),
+          anchor: new window.google.maps.Point(20, 40),
         },
         destinationIcon: {
-          url: "https://maps.google.com/mapfiles/ms/icons/homegardenbusiness.png",
+          url: "https://maps.google.com/mapfiles/ms/icons/green-dot.png",
           scaledSize: new window.google.maps.Size(40, 40),
           anchor: new window.google.maps.Point(20, 40),
         },
       });
+      console.log("Icons set:", icons);
     }
   }, [isLoaded]);
+
+  // Log when icons are used
+  useEffect(() => {
+    if (Object.keys(icons).length > 0) {
+      console.log("Icons available for use:", icons);
+    }
+  }, [icons]);
 
   // Get current location for driver
   useEffect(() => {
@@ -545,7 +553,15 @@ const DeliveryTrackingPage = ({
                 (currentStatusIndex / (DELIVERY_STATUSES.length - 1)) * 100
               }%`,
             }}
-          ></div>
+          >
+            {/* Console log moved inside the component children */}
+            {console.log(
+              "Rendering Map Content. isLoaded:",
+              isLoaded,
+              "Delivery Data:",
+              delivery
+            )}
+          </div>
 
           {/* Status points */}
           <div className="flex justify-between relative">
@@ -595,7 +611,7 @@ const DeliveryTrackingPage = ({
 
       {/* Map section */}
       <div className="relative">
-        {mapCenter && (
+        {isLoaded && delivery && mapCenter && (
           <GoogleMap
             mapContainerStyle={mapContainerStyle}
             center={isDriver && currentLocation ? currentLocation : mapCenter}
@@ -614,7 +630,8 @@ const DeliveryTrackingPage = ({
               ],
             }}
           >
-            {delivery.pickupCoords && icons.restaurantIcon && (
+            {/* Restaurant marker */}
+            {delivery?.pickupCoords && icons.restaurantIcon && (
               <Marker
                 position={delivery.pickupCoords}
                 icon={icons.restaurantIcon}
@@ -622,7 +639,8 @@ const DeliveryTrackingPage = ({
               />
             )}
 
-            {delivery.dropCoords && icons.destinationIcon && (
+            {/* Customer marker */}
+            {delivery?.dropCoords && icons.destinationIcon && (
               <Marker
                 position={delivery.dropCoords}
                 icon={icons.destinationIcon}
@@ -630,15 +648,16 @@ const DeliveryTrackingPage = ({
               />
             )}
 
+            {/* Driver marker */}
             {(isDriver && currentLocation
               ? currentLocation
-              : delivery.driver?.location) &&
+              : delivery?.driver?.location) &&
               icons.bikerIcon && (
                 <Marker
                   position={
                     isDriver && currentLocation
                       ? currentLocation
-                      : delivery.driver.location
+                      : delivery.driver.location // Non-null assertion removed, outer check covers this
                   }
                   icon={icons.bikerIcon}
                   title={isDriver ? "Your Location" : delivery.driver.name}
