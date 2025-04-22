@@ -23,7 +23,7 @@ const createPaymentIntent = async (req, res) => {
     !customerName ||
     !customerAddress ||
     !customerPhone ||
-   !customerEmail ||
+    !customerEmail ||
     !restaurantName ||
     !restaurantAddress
   ) {
@@ -65,7 +65,7 @@ const createPaymentIntent = async (req, res) => {
       orderId,
       customerName,
       customerPhone,
-     customerEmail,
+      customerEmail,
       pickupAddress: restaurantAddress,
       dropAddress: customerAddress,
       restaurantName,

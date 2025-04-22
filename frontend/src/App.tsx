@@ -10,8 +10,8 @@ import Checkout from "./pages/Checkout";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import Login from "./components/auth/LoginForm";
 import ProtectedRoute from "./components/routing/ProtectedRoute";
-import CheckoutForm from "./components/CheckoutForm";
 import PaymentGateway from "./components/PaymentGateway";
+import DeliveryTrackingPage from "./components/DeliveryTracking";
 
 export function App() {
   console.log("App rendering");
@@ -38,6 +38,7 @@ export function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Login isSignup={true} />} />
                 <Route path="/payment" element={<PaymentGateway />} />
+                <Route path="/delivery" element={<DeliveryTrackingPage />} />
               </Route>
 
               {/* Protected Routes */}
