@@ -10,6 +10,7 @@ exports.register = async (req, res) => {
     password,
     licensePlate,
     bikeType,
+    phone,
     serviceAreas,
     available = true,
     location = { lat: 0, lng: 0 },
@@ -27,26 +28,22 @@ exports.register = async (req, res) => {
       password: hashedPassword,
       licensePlate,
       bikeType,
+      phone,
       serviceAreas,
       available,
       location,
     });
 
     await newDriver.save();
-
-    const token = jwt.sign({ id: newDriver._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
-    res.status(201).json({ token, driver: newDriver });
+    res.status(201).json({ msg: "Driver registered successfully" });
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }
 };
-
 // Login driver
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+
   try {
     const driver = await Driver.findOne({ email });
     if (!driver) return res.status(400).json({ msg: "Invalid credentials" });
@@ -54,11 +51,7 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, driver.password);
     if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
 
-    const token = jwt.sign({ id: driver._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
-    res.json({ token, driver });
+    res.status(200).json({ msg: "Login successful", driverId: driver._id });
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }

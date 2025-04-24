@@ -10,8 +10,11 @@ import Checkout from "./pages/Checkout";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import Login from "./components/auth/LoginForm";
 import ProtectedRoute from "./components/routing/ProtectedRoute";
-import CheckoutForm from "./components/CheckoutForm";
 import PaymentGateway from "./components/PaymentGateway";
+import DeliveryTrackingPage from "./components/DeliveryTracking";
+import DriverLogin from "./components/auth/DriverLogin";
+import DriverRegister from "./components/auth/DriverRegsiter";
+import OrderSearch from "./components/OrderSearch";
 
 export function App() {
   console.log("App rendering");
@@ -38,6 +41,13 @@ export function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Login isSignup={true} />} />
                 <Route path="/payment" element={<PaymentGateway />} />
+                <Route path="/order-status" element={<OrderSearch />} />
+                <Route
+                  path="/delivery/:orderId"
+                  element={<DeliveryTrackingPage />}
+                />
+                <Route path="/driver/login" element={<DriverLogin />} />
+                <Route path="/driver/register" element={<DriverRegister />} />
               </Route>
 
               {/* Protected Routes */}
