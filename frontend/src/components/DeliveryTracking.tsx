@@ -7,6 +7,9 @@ import {
   useJsApiLoader,
   DirectionsRenderer,
 } from "@react-google-maps/api";
+import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
+import { clearDriver } from "../redux/slices/driverSlice";
 import {
   Clock,
   MapPin,
@@ -24,7 +27,10 @@ import {
   Send,
   CheckCircle,
   ShoppingBag,
+  LogOut,
+  RefreshCw,
 } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
 
 // Interfaces
 interface Coordinates {
@@ -86,11 +92,11 @@ const DELIVERY_STATUSES = [
 
 // API and Socket configuration
 const API_BASE_URL = "http://localhost:8000"; // Replace with your actual API URL
-const SOCKET_URL = "http://localhost:5004/socket"; // Replace with your actual Socket.io server URL
+const SOCKET_URL = "http://localhost:8000/socket"; // Replace with your actual Socket.io server URL
 
-const DeliveryTrackingPage = ({
-  isDriver = true,
-}: DeliveryTrackingPageProps) => {
+const DeliveryTrackingPage = ({}: DeliveryTrackingPageProps) => {
+  const dispatch = useDispatch();
+  const isDriver = useSelector((state: any) => state.driver.isDriver);
   const [delivery, setDelivery] = useState<Delivery | null>(null);
   const [eta, setEta] = useState<string | null>(null);
   const [directions, setDirections] =
@@ -108,10 +114,15 @@ const DeliveryTrackingPage = ({
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(
     null
   );
+  const [socketConnected, setSocketConnected] = useState<boolean>(false);
+  const [retryingSocket, setRetryingSocket] = useState<boolean>(false);
+  const [locationUpdateInterval, setLocationUpdateInterval] = useState<
+    number | null
+  >(null);
 
   const socketRef = useRef<Socket | null>(null);
-  const orderId =
-    new URLSearchParams(window.location.search).get("orderId") || "ORDER1";
+  const { orderId } = useParams();
+  const navigate = useNavigate();
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: "AIzaSyD-v327RRVZySPUiCCoGGitHNGTP53PimQ",
@@ -138,16 +149,8 @@ const DeliveryTrackingPage = ({
           anchor: new window.google.maps.Point(20, 40),
         },
       });
-      console.log("Icons set:", icons);
     }
   }, [isLoaded]);
-
-  // Log when icons are used
-  useEffect(() => {
-    if (Object.keys(icons).length > 0) {
-      console.log("Icons available for use:", icons);
-    }
-  }, [icons]);
 
   // Get current location for driver
   useEffect(() => {
@@ -167,6 +170,9 @@ const DeliveryTrackingPage = ({
               location: location,
               driverId: delivery.driver.id,
             });
+          } else if (!socketConnected && delivery) {
+            // If socket is not connected, update through API as fallback
+            updateLocationViaAPI(location);
           }
         },
         (error) => {
@@ -176,7 +182,30 @@ const DeliveryTrackingPage = ({
 
       return () => navigator.geolocation.clearWatch(watchId);
     }
-  }, [isDriver, delivery]);
+  }, [isDriver, delivery, socketConnected]);
+
+  // Fallback method to update location via API when socket is not connected
+  const updateLocationViaAPI = async (location: Coordinates) => {
+    if (!delivery) return;
+
+    try {
+      await axios.post(
+        `${API_BASE_URL}/api/delivery/${delivery.orderId}/location`,
+        {
+          orderId: delivery.orderId,
+          location: location,
+          driverId: delivery.driver.id,
+        }
+      );
+
+      // Update local state to reflect the change
+      setDelivery((prev) =>
+        prev ? { ...prev, driver: { ...prev.driver, location } } : prev
+      );
+    } catch (err) {
+      console.error("Failed to update location via API:", err);
+    }
+  };
 
   // Fetch initial delivery data
   useEffect(() => {
@@ -214,81 +243,164 @@ const DeliveryTrackingPage = ({
     fetchDeliveryData();
   }, [orderId, isDriver, currentLocation]);
 
+  // Setup pollfallback for location updates when socket fails
+  useEffect(() => {
+    if (isDriver && delivery && !socketConnected) {
+      // Set up polling interval as fallback for socket
+      const interval = window.setInterval(() => {
+        if (currentLocation) {
+          updateLocationViaAPI(currentLocation);
+        }
+      }, 10000); // Every 10 seconds
+
+      setLocationUpdateInterval(interval);
+
+      return () => {
+        if (locationUpdateInterval) {
+          window.clearInterval(locationUpdateInterval);
+        }
+      };
+    }
+  }, [isDriver, delivery, socketConnected, currentLocation]);
+
   // Initialize socket connection and handle real-time updates
   useEffect(() => {
     if (!delivery) return;
 
-    // Initialize socket connection
-    socketRef.current = io(SOCKET_URL, {
-      query: {
-        orderId: delivery.orderId,
-        location: delivery.driver.location,
-        driverId: delivery.driver.id,
-      },
-    });
+    const connectSocket = () => {
+      // Initialize socket connection
+      setRetryingSocket(true);
+      socketRef.current = io(SOCKET_URL, {
+        query: {
+          orderId: delivery.orderId,
+          location: JSON.stringify(delivery.driver.location),
+          driverId: delivery.driver.id,
+        },
+        reconnectionAttempts: 5,
+        reconnectionDelay: 3000,
+        timeout: 10000,
+      });
 
-    // Handle driver location updates
-    socketRef.current.on("location_update", (data: SocketLocationUpdate) => {
-      if (data.orderId === delivery.orderId) {
-        setDelivery((prev) =>
-          prev
-            ? {
-                ...prev,
-                driver: { ...prev.driver, location: data.location },
-                // Update status if provided
-                ...(data.status ? { status: data.status } : {}),
-              }
-            : prev
-        );
+      // Handle connection events
+      socketRef.current.on("connect", () => {
+        console.log("Socket connected successfully");
+        setSocketConnected(true);
+        setRetryingSocket(false);
 
-        if (!isDriver) {
-          setMapCenter(data.location);
+        // Clear fallback interval if it exists
+        if (locationUpdateInterval) {
+          window.clearInterval(locationUpdateInterval);
+          setLocationUpdateInterval(null);
         }
+      });
 
-        // Update status index if status changed
-        if (data.status) {
-          const statusIndex = DELIVERY_STATUSES.findIndex(
-            (status) => status === data.status
-          );
-          if (statusIndex !== -1) {
-            setCurrentStatusIndex(statusIndex);
-          }
-        }
-      }
-    });
-
-    // Handle status updates
-    socketRef.current.on(
-      "status_update",
-      (data: { orderId: string; status: string }) => {
+      // Handle driver location updates
+      socketRef.current.on("location_update", (data: SocketLocationUpdate) => {
         if (data.orderId === delivery.orderId) {
           setDelivery((prev) =>
-            prev ? { ...prev, status: data.status } : prev
+            prev
+              ? {
+                  ...prev,
+                  driver: { ...prev.driver, location: data.location },
+                  // Update status if provided
+                  ...(data.status ? { status: data.status } : {}),
+                }
+              : prev
           );
 
-          const statusIndex = DELIVERY_STATUSES.findIndex(
-            (status) => status === data.status
-          );
-          if (statusIndex !== -1) {
-            setCurrentStatusIndex(statusIndex);
+          if (!isDriver) {
+            setMapCenter(data.location);
+          }
+
+          // Update status index if status changed
+          if (data.status) {
+            const statusIndex = DELIVERY_STATUSES.findIndex(
+              (status) => status === data.status
+            );
+            if (statusIndex !== -1) {
+              setCurrentStatusIndex(statusIndex);
+            }
           }
         }
-      }
-    );
+      });
 
-    // Handle connection errors
-    socketRef.current.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-      setError("Lost connection to tracking server. Trying to reconnect...");
-    });
+      // Handle status updates
+      socketRef.current.on(
+        "status_update",
+        (data: { orderId: string; status: string }) => {
+          if (data.orderId === delivery.orderId) {
+            setDelivery((prev) =>
+              prev ? { ...prev, status: data.status } : prev
+            );
+
+            const statusIndex = DELIVERY_STATUSES.findIndex(
+              (status) => status === data.status
+            );
+            if (statusIndex !== -1) {
+              setCurrentStatusIndex(statusIndex);
+            }
+          }
+        }
+      );
+
+      // Handle disconnection
+      socketRef.current.on("disconnect", () => {
+        console.log("Socket disconnected");
+        setSocketConnected(false);
+      });
+
+      // Handle connection errors
+      socketRef.current.on("connect_error", (error) => {
+        console.error("Socket connection error:", error);
+        setSocketConnected(false);
+        setRetryingSocket(false);
+      });
+    };
+
+    connectSocket();
 
     // Cleanup function to disconnect socket
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
+      if (locationUpdateInterval) {
+        window.clearInterval(locationUpdateInterval);
+      }
     };
-  }, [delivery, isDriver]);
+  }, [delivery]);
+
+  // Retry connecting to socket
+  const retrySocketConnection = () => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+
+    if (delivery) {
+      setRetryingSocket(true);
+      setTimeout(() => {
+        socketRef.current = io(SOCKET_URL, {
+          query: {
+            orderId: delivery.orderId,
+            location: JSON.stringify(delivery.driver.location),
+            driverId: delivery.driver.id,
+          },
+          reconnectionAttempts: 5,
+          reconnectionDelay: 3000,
+        });
+
+        socketRef.current.on("connect", () => {
+          setSocketConnected(true);
+          setRetryingSocket(false);
+        });
+
+        socketRef.current.on("connect_error", () => {
+          setSocketConnected(false);
+          setRetryingSocket(false);
+        });
+      }, 1000);
+    }
+  };
 
   // Calculate ETA and directions when driver location changes
   useEffect(() => {
@@ -354,7 +466,13 @@ const DeliveryTrackingPage = ({
         );
       }
     }
-  }, [isLoaded, delivery?.driver?.location, currentStatusIndex]);
+  }, [
+    isLoaded,
+    delivery?.driver?.location,
+    currentStatusIndex,
+    delivery?.pickupCoords,
+    delivery?.dropCoords,
+  ]);
 
   // Function to update order status (for driver view)
   const updateOrderStatus = async (newStatus: string) => {
@@ -372,6 +490,14 @@ const DeliveryTrackingPage = ({
           status: newStatus,
         }
       );
+
+      // If socket is connected, emit the status update
+      if (socketRef.current?.connected) {
+        socketRef.current.emit("status_update", {
+          orderId: delivery.orderId,
+          status: newStatus,
+        });
+      }
 
       // Update local state
       setDelivery((prev) => (prev ? { ...prev, status: newStatus } : prev));
@@ -397,6 +523,22 @@ const DeliveryTrackingPage = ({
       return DELIVERY_STATUSES[currentStatusIndex + 1];
     }
     return null;
+  };
+
+  // Handle driver logout
+  const handleLogout = () => {
+    // Perform any cleanup needed
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+
+    // Clear any local storage or cookies if needed
+    localStorage.removeItem("driverToken");
+    localStorage.removeItem("driverInfo");
+
+    // Redirect to login page or home page
+    navigate("/");
+    dispatch(clearDriver());
   };
 
   if (loading) {
@@ -483,12 +625,23 @@ const DeliveryTrackingPage = ({
               {isDriver ? "Assigned on" : "Ordered on"} {formattedDate}
             </p>
           </div>
-          <div
-            className={`bg-white ${
-              isDriver ? "text-green-800" : "text-blue-800"
-            } font-semibold px-4 py-2 rounded-full text-sm`}
-          >
-            {eta ? `ETA ${eta}` : "Calculating ETA..."}
+          <div className="flex items-center space-x-2">
+            <div
+              className={`bg-white ${
+                isDriver ? "text-green-800" : "text-blue-800"
+              } font-semibold px-4 py-2 rounded-full text-sm`}
+            >
+              {eta ? `ETA ${eta}` : "Calculating ETA..."}
+            </div>
+            {isDriver && (
+              <button
+                onClick={handleLogout}
+                className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-3 py-2 rounded-full flex items-center transition-colors"
+              >
+                <LogOut className="w-4 h-4 mr-1" />
+                <span>Logout</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -553,15 +706,7 @@ const DeliveryTrackingPage = ({
                 (currentStatusIndex / (DELIVERY_STATUSES.length - 1)) * 100
               }%`,
             }}
-          >
-            {/* Console log moved inside the component children */}
-            {console.log(
-              "Rendering Map Content. isLoaded:",
-              isLoaded,
-              "Delivery Data:",
-              delivery
-            )}
-          </div>
+          ></div>
 
           {/* Status points */}
           <div className="flex justify-between relative">
@@ -657,7 +802,7 @@ const DeliveryTrackingPage = ({
                   position={
                     isDriver && currentLocation
                       ? currentLocation
-                      : delivery.driver.location // Non-null assertion removed, outer check covers this
+                      : delivery.driver.location
                   }
                   icon={icons.bikerIcon}
                   title={isDriver ? "Your Location" : delivery.driver.name}
@@ -792,20 +937,49 @@ const DeliveryTrackingPage = ({
         </div>
       </div>
 
-      {/* Connection status indicator */}
+      {/* Connection status indicator with retry option */}
       <div className="bg-gray-50 p-4 text-center border-t border-gray-200">
-        <div className="flex items-center justify-center text-sm">
-          <div
-            className={`w-2 h-2 rounded-full mr-2 ${
-              socketRef.current?.connected ? "bg-green-500" : "bg-red-500"
-            }`}
-          ></div>
-          <p className="text-gray-500">
-            {socketRef.current?.connected
-              ? "Live tracking active"
-              : "Reconnecting to tracking server..."}
-          </p>
+        <div className="flex items-center justify-center text-sm space-x-3">
+          <div className="flex items-center">
+            <div
+              className={`w-2 h-2 rounded-full mr-2 ${
+                socketConnected ? "bg-green-500" : "bg-red-500"
+              }`}
+            ></div>
+            <p className="text-gray-500">
+              {socketConnected
+                ? "Live tracking active"
+                : "Operating in offline mode"}
+            </p>
+          </div>
+
+          {!socketConnected && (
+            <button
+              onClick={retrySocketConnection}
+              disabled={retryingSocket}
+              className="text-blue-600 hover:text-blue-800 flex items-center disabled:opacity-50"
+            >
+              {retryingSocket ? (
+                <span className="flex items-center">
+                  <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                  Reconnecting...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Retry connection
+                </span>
+              )}
+            </button>
+          )}
         </div>
+
+        {!socketConnected && !retryingSocket && (
+          <p className="text-xs text-gray-500 mt-1">
+            Don't worry! Your updates are still being saved, but tracking
+            updates may be delayed.
+          </p>
+        )}
       </div>
     </div>
   );

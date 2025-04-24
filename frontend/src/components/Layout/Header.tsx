@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../redux/slices/authSlice";
+import { MapPin } from "lucide-react";
 import { RootState } from "../../redux/store";
 import AuthModal from "../auth/AuthModal";
 import {
@@ -51,6 +52,9 @@ const Header: React.FC = () => {
     setIsProfileMenuOpen(false);
     navigate("/");
   };
+  const handleTrackClick = () => {
+    navigate("/order-status"); // Navigate to the order tracking search page
+  };
 
   const handleProfileClick = () => {
     if (isAuthenticated) {
@@ -94,8 +98,20 @@ const Header: React.FC = () => {
             {/* Location - hide for restaurant users */}
             {(!isAuthenticated || !user?.restaurantName) && (
               <div className="hidden md:flex items-center space-x-2 text-gray-700 cursor-pointer">
-                <MapPinIcon size={20} />
-                <span className="text-sm">Deliver to: 123 Main St</span>
+                <button
+                  onClick={handleTrackClick}
+                  className="group flex h-10 items-center gap-2 rounded-full bg-gray-100 pl-3 pr-4 transition-all duration-300 ease-out hover:bg-black hover:pl-2 hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-offset-2"
+                >
+                  <span className="relative overflow-hidden rounded-full bg-black p-1 text-white transition-all duration-300 group-hover:bg-white">
+                    <MapPin
+                      size={18}
+                      className="transform transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-black group-active:rotate-12"
+                    />
+                  </span>
+                  <span className="font-medium opacity-90 transition-all duration-300 group-hover:opacity-100">
+                    Track Your Order
+                  </span>
+                </button>
               </div>
             )}
 

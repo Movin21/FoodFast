@@ -4,17 +4,19 @@ import storage from "redux-persist/lib/storage";
 import authReducer from "./slices/authSlice";
 import restaurantReducer from "./slices/restaurantSlice";
 import orderReducer from "./slices/orderSlice";
+import driverReducer from "./slices/driverSlice";
 
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["auth"], // only auth will be persisted
+  whitelist: ["auth", "driver"], // only auth will be persisted
 };
 
 const rootReducer = combineReducers({
   auth: authReducer,
   restaurant: restaurantReducer,
   order: orderReducer,
+  driver: driverReducer,
   // Add other reducers here as needed
 });
 
