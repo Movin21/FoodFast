@@ -16,15 +16,13 @@ import DeliveryTrackingPage from "./components/DeliveryTracking";
 import DriverLogin from "./components/auth/DriverLogin";
 import DriverRegister from "./components/auth/DriverRegsiter";
 import OrderSearch from "./components/OrderSearch";
-
+import Header from "./components/Layout/Header";
 export function App() {
   return (
     <BrowserRouter>
       <CartProvider>
-
         <div className="min-h-screen bg-gray-50 flex flex-col">
           {/* Global Header for all routes */}
-          <Header />
 
           <div className="flex-grow">
             <Routes>
@@ -45,23 +43,24 @@ export function App() {
                 <Route path="/driver/register" element={<DriverRegister />} />
               </Route>
 
+              {/* Admin Routes */}
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route element={<ProtectedRoute />}>
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              </Route>
 
-          {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route element={<ProtectedRoute />}>
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          </Route>
-
-          {/* Restaurant Dashboard Route */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<RestaurantDashboardLayout />}>
-              <Route
-                path="/restaurant/dashboard"
-                element={<RestaurantDashboard />}
-              />
-            </Route>
-          </Route>
-        </Routes>
+              {/* Restaurant Dashboard Routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<RestaurantDashboardLayout />}>
+                  <Route
+                    path="/restaurant/dashboard"
+                    element={<RestaurantDashboard />}
+                  />
+                </Route>
+              </Route>
+            </Routes>
+          </div>
+        </div>
       </CartProvider>
     </BrowserRouter>
   );

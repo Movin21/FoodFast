@@ -7,6 +7,11 @@ const AdminDashboard: React.FC = () => {
   const [restaurantToTerminate, setRestaurantToTerminate] = useState<
     string | null
   >(null);
+  const [transactions, setTransactions] = useState([]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(
+    null
+  );
 
   interface Restaurant {
     _id: string;
@@ -98,6 +103,42 @@ const AdminDashboard: React.FC = () => {
       };
 
       fetchUnapprovedRestaurants();
+    }
+  }, [activeTab, navigate]);
+
+  // Fetch transactions
+  useEffect(() => {
+    if (activeTab === "transactions") {
+      const fetchTransactions = async () => {
+        const token = localStorage.getItem("adminToken");
+        try {
+          const response = await fetch(
+            "http://localhost:8000/api/payment/transactions",
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          if (response.status === 401 || response.status === 403) {
+            // Token expired or invalid
+            alert("Session expired. Please log in again.");
+            localStorage.removeItem("adminToken");
+            navigate("/admin/login");
+            return;
+          }
+
+          if (response.ok) {
+            const data = await response.json();
+            setTransactions(data.data);
+          } else {
+            console.error("Failed to fetch transactions");
+          }
+        } catch (error) {
+          console.error("Error fetching transactions:", error);
+        }
+      };
+
+      fetchTransactions();
     }
   }, [activeTab, navigate]);
 
@@ -434,6 +475,128 @@ const AdminDashboard: React.FC = () => {
     </div>
   );
 
+  const renderTransactionsTab = () => (
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold">Payment Transactions</h2>
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Order ID
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Restaurant
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {transactions.map((transaction) => (
+                <tr key={transaction._id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {transaction.orderId}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      ${(transaction.amount / 100).toFixed(2)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      ${
+                        transaction.paymentStatus === "succeeded"
+                          ? "bg-green-100 text-green-800"
+                          : transaction.paymentStatus === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {transaction.paymentStatus}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {transaction.customerName}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {transaction.customerEmail}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {transaction.restaurantName}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">
+                      {new Date(transaction.createdAt).toLocaleDateString()}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => openDeleteModal(transaction._id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Confirm Deletion
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this transaction? This action
+              cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={closeDeleteModal}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "dashboard":
@@ -444,6 +607,8 @@ const AdminDashboard: React.FC = () => {
         return renderRestaurantsTab();
       case "unapprovedRestaurants":
         return renderUnapprovedRestaurantsTab();
+      case "transactions":
+        return renderTransactionsTab();
       default:
         return null;
     }
@@ -505,6 +670,18 @@ const AdminDashboard: React.FC = () => {
                   }`}
                 >
                   Unapproved Restaurants
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActiveTab("transactions")}
+                  className={`w-full px-6 py-3 text-left flex items-center ${
+                    activeTab === "transactions"
+                      ? "bg-gray-100 font-medium border-r-4 border-black"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  Transactions
                 </button>
               </li>
             </ul>
