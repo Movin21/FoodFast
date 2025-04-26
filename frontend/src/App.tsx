@@ -1,10 +1,8 @@
-import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { store, persistor } from "./redux/store";
-import Header from "./components/Layout/Header";
+import Footer from "./components/Layout/Footer";
 
 import { CartProvider } from "./context/CartContext";
 
@@ -24,69 +22,63 @@ import DeliveryTrackingPage from "./components/DeliveryTracking";
 import DriverLogin from "./components/auth/DriverLogin";
 import DriverRegister from "./components/auth/DriverRegsiter";
 import OrderSearch from "./components/OrderSearch";
-import Header from "./components/Layout/Header";
 
 export function App() {
-  return (
+  // Define which routes should show the footer
+  const shouldShowFooter = true; // You can implement logic to hide footer on certain routes if needed
 
+  return (
     <Provider store={store}>
       <PersistGate loading={<div className="flex justify-center items-center min-h-screen"><LoadingSpinner size="lg" /></div>} persistor={persistor}>
-    
-    <BrowserRouter>
-      <CartProvider>
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-          {/* Global Header for all routes */}
+        <BrowserRouter>
+          <CartProvider>
+            <div className="min-h-screen bg-gray-50 flex flex-col">
+              {/* Global Header for all routes */}
+              
+              <div className="flex-grow">
+                <Routes>
+                  <Route element={<Layout />}>
+                    {/* Public Routes */}
+                    <Route path="/" element={<Home />} />
+                    <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Login isSignup={true} />} />
+                    <Route path="/payment" element={<PaymentGateway />} />
+                    <Route path="/order-status" element={<OrderSearch />} />
+                    <Route
+                      path="/delivery/:orderId"
+                      element={<DeliveryTrackingPage />}
+                    />
+                    <Route path="/driver/login" element={<DriverLogin />} />
+                    <Route path="/driver/register" element={<DriverRegister />} />
+                  </Route>
 
-          <div className="flex-grow">
-            <Routes>
-              <Route element={<Layout />}>
-                {/* Public Routes */}
-                <Route path="/" element={<Home />} />
-                <Route path="/restaurant/:id" element={<RestaurantDetail />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Login isSignup={true} />} />
-                <Route path="/payment" element={<PaymentGateway />} />
-                <Route path="/order-status" element={<OrderSearch />} />
-                <Route
-                  path="/delivery/:orderId"
-                  element={<DeliveryTrackingPage />}
-                />
-                <Route path="/driver/login" element={<DriverLogin />} />
-                <Route path="/driver/register" element={<DriverRegister />} />
-              </Route>
+                  {/* Admin Routes */}
+                  <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  </Route>
 
-              {/* Admin Routes */}
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route element={<ProtectedRoute />}>
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              </Route>
+                  {/* Restaurant Dashboard Routes */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route element={<RestaurantDashboardLayout />}>
+                      <Route
+                        path="/restaurant/dashboard"
+                        element={<RestaurantDashboard />}
+                      />
+                      <Route path="/orders" element={<div>User Orders Page</div>} />
+                    </Route>
+                  </Route>
+                </Routes>
+              </div>
 
-              {/* Restaurant Dashboard Routes */}
-              <Route element={<ProtectedRoute />}>
-                <Route element={<RestaurantDashboardLayout />}>
-                  <Route
-                    path="/restaurant/dashboard"
-                    element={<RestaurantDashboard />}
-                  />
-
-                  <Route path="/orders" element={<div>User Orders Page</div>} />
-                </Route>
-              </Routes>
+              {/* Only show footer on certain pages */}
+              {shouldShowFooter && <Footer />}
             </div>
-
-            {/* Only show footer on certain pages */}
-            {shouldShowFooter && <Footer />}
-          </div>
+          </CartProvider>
         </BrowserRouter>
       </PersistGate>
     </Provider>
-                </Route>
-              </Route>
-            </Routes>
-          </div>
-        </div>
-      </CartProvider>
-    </BrowserRouter>
   );
 }
