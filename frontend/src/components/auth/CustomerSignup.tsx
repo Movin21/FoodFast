@@ -1,15 +1,20 @@
 import React, { useState } from "react";
 import Button from "../Button";
+
 const CustomerSignup: React.FC = () => {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
+    address: "",
     password: "",
     confirmPassword: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.firstName.trim()) {
@@ -28,6 +33,9 @@ const CustomerSignup: React.FC = () => {
     } else if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ""))) {
       newErrors.phone = "Invalid phone number";
     }
+    if (!formData.address.trim()) {
+      newErrors.address = "Address is required";
+    }
     if (!formData.password) {
       newErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
@@ -39,14 +47,64 @@ const CustomerSignup: React.FC = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // Handle signup logic here
-      console.log("Customer Signup:", formData);
+      setIsSubmitting(true);
+      try {
+        // Create an object without confirmPassword
+        const registrationData = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          password: formData.password,
+        };
+
+        const response = await fetch('http://localhost:5001/customers/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(registrationData),
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.msg || 'Registration failed');
+        }
+        
+        console.log("Registration successful:", data);
+        // Store token in localStorage
+        localStorage.setItem('token', data.token);
+        // Set success state
+        setSuccess(true);
+        // Reset form
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: "",
+          address: "",
+          password: "",
+          confirmPassword: "",
+        });
+      } catch (error) {
+        console.error("Registration error:", error);
+        setErrors((prev) => ({
+          ...prev,
+          form: error instanceof Error ? error.message : 'Registration failed'
+        }));
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -60,8 +118,14 @@ const CustomerSignup: React.FC = () => {
       }));
     }
   };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {success && (
+        <div className="rounded-md bg-green-50 p-2 mb-4">
+          <p className="text-sm text-green-700">Account created successfully! You can now log in.</p>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label
@@ -142,6 +206,25 @@ const CustomerSignup: React.FC = () => {
       </div>
       <div>
         <label
+          htmlFor="address"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Address
+        </label>
+        <textarea
+          id="address"
+          name="address"
+          value={formData.address}
+          onChange={handleChange}
+          rows={3}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-gray-500 focus:outline-none focus:ring-gray-500 sm:text-sm"
+        />
+        {errors.address && (
+          <p className="mt-1 text-xs text-red-600">{errors.address}</p>
+        )}
+      </div>
+      <div>
+        <label
           htmlFor="password"
           className="block text-sm font-medium text-gray-700"
         >
@@ -178,10 +261,16 @@ const CustomerSignup: React.FC = () => {
           <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>
         )}
       </div>
-      <Button type="submit" variant="primary" fullWidth>
-        Create Account
+      {errors.form && (
+        <div className="rounded-md bg-red-50 p-2">
+          <p className="text-sm text-red-700">{errors.form}</p>
+        </div>
+      )}
+      <Button type="submit" variant="primary" fullWidth disabled={isSubmitting}>
+        {isSubmitting ? "Creating Account..." : "Create Account"}
       </Button>
     </form>
   );
 };
+
 export default CustomerSignup;

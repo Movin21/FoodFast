@@ -7,6 +7,7 @@ import {
   loginFailure,
 } from "../../redux/slices/authSlice";
 import { RootState } from "../../redux/store";
+import Button from "../Button";
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -18,13 +19,13 @@ const LoginForm: React.FC<LoginFormProps> = ({
   isSignup = false,
 }) => {
   const [formData, setFormData] = useState({
-    username: "",
+    email: "",
     password: "",
-    isRestaurant: false, // Add toggle for restaurant/user login
+    userType: "customer", // Default to customer
   });
 
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -51,32 +52,57 @@ const LoginForm: React.FC<LoginFormProps> = ({
     }
   }, [isAuthenticated, navigate, onSuccess, user]);
 
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Invalid email address";
+    }
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage("");
-    setIsLoading(true);
-
-    // Determine which endpoint to call based on user type
-    const endpoint = formData.isRestaurant ? "restaurantLogin" : "login";
-
+    if (validateForm()) {
+      setIsSubmitting(true);
     try {
       const response = await fetch(
         `http://localhost:8000/api/restaurant/auth/${endpoint}`,
         {
+
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            username: formData.username,
+            email: formData.email,
             password: formData.password,
           }),
-        }
-      );
+        });
 
-      console.log(`Login response status: ${response.status}`);
-
-      const data = await response.json();
+        const data = await response.json();
 
       if (!response.ok) {
         console.log("Login failed:", data);
@@ -115,56 +141,74 @@ const LoginForm: React.FC<LoginFormProps> = ({
         onSuccess();
       }
 
-      // Redirect based on user type
-      if (formData.isRestaurant) {
-        console.log("Redirecting to restaurant dashboard");
-        navigate("/restaurant/dashboard");
-      } else {
-        console.log("Redirecting to home page");
-        navigate("/");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      setErrorMessage("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+        console.log("Login successful:", data);
+        
+        // Store token and user data in localStorage
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userType", formData.userType);
+        
+        if (formData.userType === "driver") {
+          localStorage.setItem("driver", JSON.stringify(data.driver));
+        } else {
+          localStorage.setItem("customer", JSON.stringify(data.customer));
+        }
+        
+        // Redirect based on user type
+        window.location.href = formData.userType === "driver" 
+          ? "/driver-dashboard" 
+          : "/";
+      } catch (error) {
+        console.error("Login error:", error);
+        setErrors((prev) => ({
+          ...prev,
+          form: error instanceof Error ? error.message : "Login failed",
+        }));
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {errorMessage && (
-        <div className="bg-red-50 p-3 rounded-md text-red-700 text-sm">
-          {errorMessage}
-        </div>
-      )}
-
       <div>
         <label
-          htmlFor="username"
+          htmlFor="userType"
           className="block text-sm font-medium text-gray-700"
         >
-          Username
+          I am a
+        </label>
+        <select
+          id="userType"
+          name="userType"
+          value={formData.userType}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-gray-500 sm:text-sm"
+        >
+          <option value="customer">Customer</option>
+          <option value="driver">Delivery Driver</option>
+        </select>
+      </div>
+      <div>
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Email
         </label>
         <input
-          type="text"
-          id="username"
-          name="username"
-          value={formData.username}
+          type="email"
+          id="email"
+          name="email"
+          value={formData.email}
           onChange={handleChange}
-          required
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-gray-500 focus:outline-none focus:ring-gray-500 sm:text-sm"
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-gray-500 focus:outline-none focus:ring-gray-500 sm:text-sm"
         />
+        {errors.email && (
+          <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+        )}
       </div>
-
       <div>
         <label
           htmlFor="password"
@@ -178,35 +222,20 @@ const LoginForm: React.FC<LoginFormProps> = ({
           name="password"
           value={formData.password}
           onChange={handleChange}
-          required
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-gray-500 focus:outline-none focus:ring-gray-500 sm:text-sm"
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-gray-500 focus:outline-none focus:ring-gray-500 sm:text-sm"
         />
+        {errors.password && (
+          <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+        )}
       </div>
-
-      <div className="flex items-center">
-        <input
-          type="checkbox"
-          id="isRestaurant"
-          name="isRestaurant"
-          checked={formData.isRestaurant}
-          onChange={handleChange}
-          className="h-4 w-4 rounded border-gray-300 focus:ring-gray-500"
-        />
-        <label
-          htmlFor="isRestaurant"
-          className="ml-2 block text-sm text-gray-700"
-        >
-          Sign in as Restaurant
-        </label>
-      </div>
-
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-      >
-        {isLoading ? "Signing in..." : "Sign In"}
-      </button>
+      {errors.form && (
+        <div className="rounded-md bg-red-50 p-2">
+          <p className="text-sm text-red-700">{errors.form}</p>
+        </div>
+      )}
+      <Button type="submit" variant="primary" fullWidth disabled={isSubmitting}>
+        {isSubmitting ? "Logging in..." : "Log In"}
+      </Button>
     </form>
   );
 };

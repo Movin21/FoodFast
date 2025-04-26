@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useCart } from "../../context/CartContext";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../redux/slices/authSlice";
 import { MapPin } from "lucide-react";
@@ -17,7 +16,6 @@ import {
 } from "lucide-react";
 
 const Header: React.FC = () => {
-  const { cartItems } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -27,6 +25,10 @@ const Header: React.FC = () => {
   const { isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
   );
+  
+  // Cart state from Redux
+  const cartItems = useSelector((state: RootState) => state.cart.items);
+  
   const dispatch = useDispatch();
   const navigate = useNavigate();
 

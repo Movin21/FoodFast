@@ -1,99 +1,92 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import RestaurantCard from "../components/RestaurantCard";
 import { FilterIcon } from "lucide-react";
 import OffersSection from "../components/OffersSection";
 import CategoryScroll from "../components/CategoryScroll";
-const restaurantsData = [
-  {
-    id: "1",
-    name: "Burger Palace",
-    imageUrl:
-      "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80",
-    rating: 4.7,
-    deliveryTime: "15-25 min",
-    deliveryFee: "$1.99",
-    categories: ["Burgers", "American", "Fast Food"],
-  },
-  {
-    id: "2",
-    name: "Pizza Heaven",
-    imageUrl:
-      "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80",
-    rating: 4.5,
-    deliveryTime: "20-30 min",
-    deliveryFee: "$2.49",
-    categories: ["Pizza", "Italian", "Vegetarian"],
-  },
-  {
-    id: "3",
-    name: "Sushi Express",
-    imageUrl:
-      "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80",
-    rating: 4.8,
-    deliveryTime: "25-35 min",
-    deliveryFee: "$3.99",
-    categories: ["Japanese", "Sushi", "Healthy"],
-  },
-  {
-    id: "4",
-    name: "Taco Fiesta",
-    imageUrl:
-      "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80",
-    rating: 4.3,
-    deliveryTime: "15-25 min",
-    deliveryFee: "$1.49",
-    categories: ["Mexican", "Tacos", "Burritos"],
-  },
-  {
-    id: "5",
-    name: "Pasta Paradise",
-    imageUrl:
-      "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80",
-    rating: 4.6,
-    deliveryTime: "25-40 min",
-    deliveryFee: "$2.99",
-    categories: ["Italian", "Pasta", "Mediterranean"],
-  },
-  {
-    id: "6",
-    name: "Salad & Co",
-    imageUrl:
-      "https://images.unsplash.com/photo-1546793665-c74683f339c1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80",
-    rating: 4.4,
-    deliveryTime: "15-25 min",
-    deliveryFee: "$1.99",
-    categories: ["Healthy", "Salads", "Wraps"],
-  },
-];
-const allCategories = Array.from(
-  new Set(restaurantsData.flatMap((restaurant) => restaurant.categories))
-);
+import { getAllRestaurants } from "../services/customerService";
+import LoadingSpinner from "../components/common/LoadingSpinner";
+
+interface Restaurant {
+  _id: string;
+  name: string;
+  imageUrl: string;
+  rating: number;
+  deliveryTime: string;
+  deliveryFee: string;
+  categories: string[];
+  openCloseStatus?: boolean;
+}
+
 const Home: React.FC = () => {
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedPrice, setSelectedPrice] = useState<string>("All");
   const [selectedRating, setSelectedRating] = useState<string>("All");
-  const [selectedDeliveryTime, setSelectedDeliveryTime] =
-    useState<string>("All");
-  const filteredRestaurants = restaurantsData.filter((restaurant) => {
+  const [selectedDeliveryTime, setSelectedDeliveryTime] = useState<string>("All");
+
+  // Fetch restaurants data from API
+  useEffect(() => {
+    const fetchRestaurants = async () => {
+      try {
+        setLoading(true);
+        const response = await getAllRestaurants();
+        if (response.success && response.restaurants) {
+          setRestaurants(response.restaurants);
+        } else {
+          setError("Failed to load restaurants");
+        }
+      } catch (error) {
+        console.error("Error fetching restaurants:", error);
+        setError("An error occurred while fetching restaurants");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRestaurants();
+  }, []);
+
+  // Get all unique categories from restaurant data
+  const allCategories = Array.from(
+    new Set(restaurants.flatMap((restaurant) => restaurant.categories))
+  );
+
+  // Apply filters to restaurants
+  const filteredRestaurants = restaurants.filter((restaurant) => {
     const matchesCategory =
       selectedCategory === "All" ||
       restaurant.categories.includes(selectedCategory);
+    
     const matchesPrice =
       selectedPrice === "All" ||
       (selectedPrice === "Under $10" &&
-        parseFloat(restaurant.deliveryFee.replace("$", "")) < 10);
+        parseFloat(restaurant.deliveryFee.replace("$", "")) < 10) ||
+      (selectedPrice === "$10-$20" &&
+        parseFloat(restaurant.deliveryFee.replace("$", "")) >= 10 &&
+        parseFloat(restaurant.deliveryFee.replace("$", "")) <= 20) ||
+      (selectedPrice === "$20+" &&
+        parseFloat(restaurant.deliveryFee.replace("$", "")) > 20);
+    
     const matchesRating =
       selectedRating === "All" ||
       (selectedRating === "4.5+" && restaurant.rating >= 4.5) ||
       (selectedRating === "4.0+" && restaurant.rating >= 4.0);
+    
+    // Extract min delivery time for comparison
+    const minDeliveryTime = parseInt(restaurant.deliveryTime.split("-")[0]);
     const matchesDeliveryTime =
       selectedDeliveryTime === "All" ||
-      (selectedDeliveryTime === "Under 30" &&
-        parseInt(restaurant.deliveryTime) < 30);
+      (selectedDeliveryTime === "Under 30" && minDeliveryTime < 30) ||
+      (selectedDeliveryTime === "Under 45" && minDeliveryTime < 45);
+    
     return (
       matchesCategory && matchesPrice && matchesRating && matchesDeliveryTime
     );
   });
+
   return (
     <div className="bg-white min-h-screen">
       <div className="bg-black text-white">
@@ -107,10 +100,12 @@ const Home: React.FC = () => {
           </p>
         </div>
       </div>
+      
       <CategoryScroll
         onSelectCategory={setSelectedCategory}
         selectedCategory={selectedCategory}
       />
+      
       <div className="bg-white border-t border-b border-gray-200">
         <div className="container mx-auto px-4 py-3">
           <div className="flex flex-wrap gap-4">
@@ -254,19 +249,48 @@ const Home: React.FC = () => {
           </div>
         </div>
       </div>
+      
       <OffersSection />
+      
       <div className="container mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-black mb-6">
           {selectedCategory === "All"
             ? "All Restaurants"
             : `${selectedCategory} Restaurants`}
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRestaurants.map((restaurant) => (
-            <RestaurantCard key={restaurant.id} {...restaurant} />
-          ))}
-        </div>
-        {filteredRestaurants.length === 0 && (
+        
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <LoadingSpinner />
+          </div>
+        ) : error ? (
+          <div className="text-center py-10">
+            <p className="text-red-500 text-lg">{error}</p>
+            <button 
+              className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredRestaurants.map((restaurant) => (
+              <RestaurantCard 
+                key={restaurant._id} 
+                id={restaurant._id}
+                name={restaurant.name}
+                imageUrl={restaurant.imageUrl}
+                rating={restaurant.rating}
+                deliveryTime={restaurant.deliveryTime}
+                deliveryFee={restaurant.deliveryFee}
+                categories={restaurant.categories}
+              />
+            ))}
+          </div>
+        )}
+        
+        {!loading && !error && filteredRestaurants.length === 0 && (
           <div className="text-center py-10">
             <p className="text-gray-600 text-lg">
               No restaurants found matching your criteria.
@@ -277,4 +301,5 @@ const Home: React.FC = () => {
     </div>
   );
 };
+
 export default Home;

@@ -24,6 +24,7 @@ const CheckoutForm = () => {
   const reduxOrder = useSelector((state) => state.order);
 
   const orderDetails = {
+
     amount: reduxOrder.amount,
     orderId: reduxOrder.orderId,
     customerName: reduxOrder.customerName,
@@ -32,6 +33,7 @@ const CheckoutForm = () => {
     customerEmail: reduxOrder.customerEmail,
     restaurantName: reduxOrder.restaurantName,
     restaurantAddress: reduxOrder.restaurantAddress,
+
   };
 
   const handleSubmit = async (e) => {
@@ -67,6 +69,7 @@ const CheckoutForm = () => {
           card: elements.getElement(CardElement),
           billing_details: {
             name: orderDetails.customerName,
+            email: orderDetails.customerEmail,
             address: { line1: orderDetails.customerAddress },
             phone: orderDetails.customerPhone,
             email: orderDetails.customerEmail,
@@ -226,6 +229,12 @@ const CheckoutForm = () => {
               <span className="text-gray-600">Name</span>
               <span className="font-medium text-gray-900">
                 {orderDetails.customerName}
+              </span>
+            </p>
+            <p className="flex justify-between">
+              <span className="text-gray-600">Email</span>
+              <span className="font-medium text-gray-900">
+                {orderDetails.customerEmail}
               </span>
             </p>
             <p className="flex justify-between">
