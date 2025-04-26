@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+      - name: notification-service
+        image: notification-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5006
+        env:
+        - name: PORT
+          value: "5006"
+        - name: MAILGUN_USER
+          valueFrom:
+            secretKeyRef:
+              name: notification-secret
+              key: mailgun-user
+        - name: MAILGUN_PASS
+          valueFrom:
+            secretKeyRef:
+              name: notification-secret
+              key: mailgun-pass
+        - name: MAILGUN_FROM
+          valueFrom:
+            secretKeyRef:
+              name: notification-secret
+              key: mailgun-from
+        - name: TWILIO_SID
+          valueFrom:
+            secretKeyRef:
+              name: notification-secret
+              key: twilio-sid
+        - name: TWILIO_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: notification-secret
+              key: twilio-auth-token
+        - name: TWILIO_PHONE
+          valueFrom:
+            secretKeyRef:
+              name: notification-secret
+              key: twilio-phone
