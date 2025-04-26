@@ -197,14 +197,14 @@ const getAllTransactions = async (req, res) => {
     res.status(200).json({
       success: true,
       count: transactions.length,
-      data: transactions
+      data: transactions,
     });
   } catch (error) {
     console.error("Error fetching transactions:", error);
     res.status(500).json({
       success: false,
       error: "Server Error",
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -212,26 +212,26 @@ const getAllTransactions = async (req, res) => {
 const deleteTransaction = async (req, res) => {
   try {
     const transaction = await Transaction.findById(req.params.id);
-    
+
     if (!transaction) {
       return res.status(404).json({
         success: false,
-        error: "Transaction not found"
+        error: "Transaction not found",
       });
     }
-    
+
     await Transaction.findByIdAndDelete(req.params.id);
-    
+
     res.status(200).json({
       success: true,
-      message: "Transaction deleted successfully"
+      message: "Transaction deleted successfully",
     });
   } catch (error) {
     console.error("Error deleting transaction:", error);
     res.status(500).json({
       success: false,
       error: "Server Error",
-      message: error.message
+      message: error.message,
     });
   }
 };
@@ -240,5 +240,5 @@ module.exports = {
   createPaymentIntent,
   handleStripeWebhook,
   getAllTransactions,
-  deleteTransaction
+  deleteTransaction,
 };
