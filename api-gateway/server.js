@@ -39,6 +39,7 @@ app.use(
     pathRewrite: {
       "^/api/delivery": "/delivery",
     },
+    logLevel: "debug",
   })
 );
 

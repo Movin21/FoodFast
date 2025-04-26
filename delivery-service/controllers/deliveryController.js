@@ -64,7 +64,7 @@ exports.createDelivery = async (req, res) => {
       status: "On the way to pick up point",
     });
 
-   // emitToRoom(orderId, "deliveryCreated", delivery);
+    // emitToRoom(orderId, "deliveryCreated", delivery);
 
     // Send notifications to driver and customer
     try {
@@ -73,14 +73,14 @@ exports.createDelivery = async (req, res) => {
       const customerMessage = `Your order ${orderId} has been confirmed! Your driver ${driver.name} (${driver.licensePlate}, ${driver.bikeType}) will pick up your order soon. Driver contact: ${driver.phone}.Live Track Your Order Using ${orderId}`;
 
       // Send notifications via notification service
-      await axios.post("http://localhost:8000/api/notify", {
+      await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}notify`, {
         toEmail: driver.email,
         toPhone: driver.phone,
         subject: `New Delivery Assignment - Order ${orderId}`,
         message: driverMessage,
       });
 
-      await axios.post("http://localhost:8000/api/notify", {
+      await axios.post(`${process.env.NOTIFICATION_SERVICE_URL}notify`, {
         toEmail: customerEmail,
         toPhone: customerPhone,
         subject: `Your Order ${orderId} Confirmation`,
