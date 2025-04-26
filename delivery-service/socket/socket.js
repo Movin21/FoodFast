@@ -1,6 +1,7 @@
 const { Server } = require("socket.io");
 
 let io;
+let deliveryNamespace; // Declare globally to make it accessible
 
 function setupSocket(server) {
   io = new Server(server, {
@@ -10,7 +11,10 @@ function setupSocket(server) {
     },
   });
 
-  io.on("connection", (socket) => {
+  // Initialize the delivery namespace here
+  deliveryNamespace = io.of("/socket");
+
+  deliveryNamespace.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
 
     socket.on("joinOrderRoom", (orderId) => {
@@ -20,7 +24,7 @@ function setupSocket(server) {
 
     socket.on("updateDriverLocation", ({ orderId, location, driverId }) => {
       // Broadcast driver location to all clients in the order room
-      io.to(orderId).emit("driverLocationUpdated", {
+      deliveryNamespace.to(orderId).emit("driverLocationUpdated", {
         orderId,
         driverLocation: location,
         driverId,
@@ -35,8 +39,10 @@ function setupSocket(server) {
 }
 
 function emitToRoom(roomId, event, data) {
-  if (io) {
-    io.to(roomId).emit(event, data);
+  if (deliveryNamespace) {
+    deliveryNamespace.to(roomId).emit(event, data);
+  } else {
+    console.error("deliveryNamespace is not defined.");
   }
 }
 

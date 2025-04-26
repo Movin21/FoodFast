@@ -65,7 +65,7 @@ const RestaurantSignup: React.FC = () => {
     if (validateForm()) {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/auth/restaurantRegister", // Fixed spelling here
+          "http://localhost:8000/api/restaurant/auth/restaurantRegister/",
           {
             method: "POST",
             headers: {
@@ -79,7 +79,7 @@ const RestaurantSignup: React.FC = () => {
           const data = await response.json();
           setSuccessMessage(data.message || "Registration successful!");
           setErrorMessage(null);
-          setShowFullScreenAlert(true); // Show the full-screen alert instead
+          setShowFullScreenAlert(true);
           setFormData({
             username: "",
             password: "",
@@ -264,7 +264,7 @@ const RestaurantSignup: React.FC = () => {
           <input
             type="text"
             id="location"
-            name="location"
+            name="location" // Must match the key in formData
             value={formData.location}
             onChange={handleChange}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-gray-500 focus:outline-none focus:ring-gray-500 sm:text-sm"

@@ -21,7 +21,14 @@ const DeliverySchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["On the way to pick up point", "Order Picked Up", "Delivered"],
+      enum: [
+        "Order confirmed",
+        "On the way to pick up point",
+        "Arrived at restaurant",
+        "Order picked up",
+        "On the way to delivery location",
+        "Order delivered",
+      ],
       default: "On the way to pick up",
     },
   },

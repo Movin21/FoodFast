@@ -1,10 +1,12 @@
 const express = require("express");
 const { createProxyMiddleware } = require("http-proxy-middleware");
+
 const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+
 app.use(cors());
 
 // Middlewares (e.g., logging)
@@ -22,7 +24,7 @@ app.use(
     target: process.env.AUTH_SERVICE_URL,
     changeOrigin: true,
     pathRewrite: {
-      "^/api/auth": "/", 
+      "^/api/auth": "/",
     },
   })
 );
@@ -33,9 +35,11 @@ app.use(
   createProxyMiddleware({
     target: process.env.DELIVERY_SERVICE_URL,
     changeOrigin: true,
+    ws: true,
     pathRewrite: {
       "^/api/delivery": "/delivery",
     },
+    logLevel: "debug",
   })
 );
 
@@ -52,12 +56,12 @@ app.use(
 );
 // Placeholder for RESTAURANT service
 app.use(
-  "/api/restuarent",
+  "/api/restaurant/",
   createProxyMiddleware({
     target: process.env.RESTAURANT_SERVICE_URL,
     changeOrigin: true,
     pathRewrite: {
-      "^/api/restuarent": "/",
+      "^/api/restaurant/": "/",
     },
   })
 );
@@ -72,6 +76,30 @@ app.use(
     },
   })
 );
+// Placeholder for NOTIFICATION service
+app.use(
+  "/api/notify",
+  createProxyMiddleware({
+    target: process.env.NOTIFICATION_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: {
+      "^/api/notify": "/notify",
+    },
+  })
+);
+
+app.use(
+  "/socket",
+  createProxyMiddleware({
+    target: process.env.DELIVERY_SERVICE_URL,
+    changeOrigin: true,
+    ws: true,
+    pathRewrite: {
+      "^/socket": "/socket",
+    },
+  })
+);
+
 // Fallback route
 app.use("*", (req, res) => {
   res.status(404).json({ msg: "API not found in gateway" });

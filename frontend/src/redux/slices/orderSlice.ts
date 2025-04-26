@@ -13,13 +13,13 @@ interface OrderState {
 
 const initialState: OrderState = {
   amount: 2000,
-  orderId: "ORD12345",
+  orderId: "ORDER00123",
   customerName: "John Doe",
-  customerAddress: "123 Main St, Colombo",
-  customerPhone: "0771234567",
-  customerEmail: "john.doe@example.com",
+  customerAddress: "Kadawatha",
+  customerPhone: "+94771234567",
+  customerEmail: "movin@gmaill.com",
   restaurantName: "Pizza House",
-  restaurantAddress: "456 Market St, Colombo",
+  restaurantAddress: "Kiribathgoda",
 };
 
 const orderSlice = createSlice({

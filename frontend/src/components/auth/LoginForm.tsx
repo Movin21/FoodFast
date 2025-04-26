@@ -87,13 +87,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
     e.preventDefault();
     if (validateForm()) {
       setIsSubmitting(true);
-      try {
-        // Determine the API endpoint based on user type
-        const endpoint = formData.userType === "driver" 
-          ? "http://localhost:5001/drivers/login" 
-          : "http://localhost:5001/customers/login";
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/restaurant/auth/${endpoint}`,
+        {
 
-        const response = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -106,9 +104,43 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
         const data = await response.json();
 
-        if (!response.ok) {
-          throw new Error(data.msg || "Login failed");
+      if (!response.ok) {
+        console.log("Login failed:", data);
+
+        // Handle admin approval needed error
+        if (
+          response.status === 403 &&
+          data.message === "Admin approval needed."
+        ) {
+          setErrorMessage(
+            "Your account is pending admin approval. Please wait for approval."
+          );
+        } else {
+          setErrorMessage(data.message || "Login failed");
         }
+
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("Login successful, data:", data);
+
+      // Store token
+      localStorage.setItem("token", data.token);
+
+      // Dispatch login success with the correct user data
+      dispatch(
+        loginSuccess({
+          token: data.token,
+          user: formData.isRestaurant ? data.restaurant : data.user,
+        })
+      );
+
+      // Call onSuccess callback (e.g., to close modal)
+      if (onSuccess) {
+        onSuccess();
+      }
+
 
         console.log("Login successful:", data);
         

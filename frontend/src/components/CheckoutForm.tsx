@@ -10,61 +10,69 @@ import {
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
+import { useNavigate } from "react-router-dom";
 
 const CheckoutForm = () => {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [cardComplete, setCardComplete] = useState(false);
+  const navigate = useNavigate();
 
-  const reduxOrder = useSelector((state: RootState) => state.order);
-
-  const fallbackOrder = {
-    amount: 2000,
-    orderId: "ORD12345",
-    customerName: "John Doe",
-    customerAddress: "123 Main St, Colombo",
-    customerPhone: "0771234567",
-    restaurantName: "Pizza House",
-    restaurantAddress: "456 Market St, Colombo",
-  };
+  const reduxOrder = useSelector((state) => state.order);
 
   const orderDetails = {
-    amount: reduxOrder.amount ?? fallbackOrder.amount,
-    orderId: reduxOrder.orderId ?? fallbackOrder.orderId,
-    customerName: reduxOrder.customerName ?? fallbackOrder.customerName,
-    customerAddress:
-      reduxOrder.customerAddress ?? fallbackOrder.customerAddress,
-    customerPhone: reduxOrder.customerPhone ?? fallbackOrder.customerPhone,
-    customerEmail: reduxOrder.customerEmail ?? "john.doe@example.com",
-    restaurantName: reduxOrder.restaurantName ?? fallbackOrder.restaurantName,
-    restaurantAddress:
-      reduxOrder.restaurantAddress ?? fallbackOrder.restaurantAddress,
+
+    amount: reduxOrder.amount,
+    orderId: reduxOrder.orderId,
+    customerName: reduxOrder.customerName,
+    customerAddress: reduxOrder.customerAddress,
+    customerPhone: reduxOrder.customerPhone,
+    customerEmail: reduxOrder.customerEmail,
+    restaurantName: reduxOrder.restaurantName,
+    restaurantAddress: reduxOrder.restaurantAddress,
+
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!stripe || !elements) return;
+
+    // Check if card field is complete before proceeding
+    if (!cardComplete) {
+      setError("Please fill out the card information completely.");
+      return;
+    }
 
     setError(null);
     setLoading(true);
 
     try {
-      const res = await axios.post(
-        "http://localhost:8000/api/payment",
-        orderDetails
-      );
+      // Send all order details directly instead of the orderDetails object
+      const res = await axios.post("http://localhost:8000/api/payment/create", {
+        amount: orderDetails.amount,
+        orderId: orderDetails.orderId,
+        customerName: orderDetails.customerName,
+        customerAddress: orderDetails.customerAddress,
+        customerPhone: orderDetails.customerPhone,
+        customerEmail: orderDetails.customerEmail,
+        restaurantName: orderDetails.restaurantName,
+        restaurantAddress: orderDetails.restaurantAddress,
+      });
+
       const clientSecret = res.data.clientSecret;
 
       const result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
-          card: elements.getElement(CardElement)!,
+          card: elements.getElement(CardElement),
           billing_details: {
             name: orderDetails.customerName,
             email: orderDetails.customerEmail,
             address: { line1: orderDetails.customerAddress },
             phone: orderDetails.customerPhone,
+            email: orderDetails.customerEmail,
           },
         },
       });
@@ -75,12 +83,21 @@ const CheckoutForm = () => {
         setSuccess(true);
       }
     } catch (err) {
-      console.error(err);
-      setSuccess(true);
+      console.error("API Error:", err.response?.data || err.message);
       setError("An unexpected error occurred. Please try again later.");
     }
 
     setLoading(false);
+  };
+
+  // Handle card field change event
+  const handleCardChange = (event) => {
+    setCardComplete(event.complete);
+    if (event.error) {
+      setError(event.error.message);
+    } else {
+      setError(null);
+    }
   };
 
   const CARD_ELEMENT_OPTIONS = {
@@ -111,8 +128,8 @@ const CheckoutForm = () => {
             Payment Successful
           </h2>
           <p className="text-gray-600 mb-6">
-            Order #{orderDetails.orderId} has been confirmed Your conformation
-            will send.
+            Order #{orderDetails.orderId} has been confirmed. Your confirmation
+            will be sent.
           </p>
 
           <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
@@ -136,7 +153,7 @@ const CheckoutForm = () => {
           </div>
 
           <button
-            onClick={() => (window.location.href = "/tracking/order")}
+            onClick={() => navigate(`/delivery/${orderDetails.orderId}`)}
             className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
           >
             Track My Order
@@ -192,7 +209,10 @@ const CheckoutForm = () => {
             <span>Card Information</span>
           </label>
           <div className="border rounded-lg p-4 bg-white shadow-sm">
-            <CardElement options={CARD_ELEMENT_OPTIONS} />
+            <CardElement
+              options={CARD_ELEMENT_OPTIONS}
+              onChange={handleCardChange}
+            />
           </div>
           {error && (
             <div className="mt-2 flex items-center space-x-2 text-red-600">
