@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: api-gateway:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        env:
+        - name: PORT
+          value: "8000"
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service:5001"
+        - name: RESTAURANT_SERVICE_URL
+          value: "http://restaurant-service:5002"
+        - name: ORDER_SERVICE_URL
+          value: "http://order-service:5003"
+        - name: DELIVERY_SERVICE_URL
+          value: "http://delivery-service:5004"
+        - name: PAYMENT_SERVICE_URL
+          value: "http://payment-service:5005"
+        - name: NOTIFICATION_SERVICE_URL
+          value: "http://notification-service:5006"

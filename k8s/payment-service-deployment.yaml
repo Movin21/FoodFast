@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+      - name: payment-service
+        image: payment-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5005
+        env:
+        - name: PORT
+          value: "5005"
+        - name: CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: connection-string
+        - name: DELIVERY_SERVICE_URL
+          value: "http://delivery-service:5004"
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: stripe-secret
+              key: secret-key
