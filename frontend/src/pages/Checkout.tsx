@@ -77,6 +77,7 @@ const Checkout: React.FC = () => {
         contactNumber,
         paymentMethod,
         specialInstructions,
+        customerEmail: "customer@example.com", // Added customer email
       };
 
       // Call the order service
@@ -90,6 +91,7 @@ const Checkout: React.FC = () => {
           customerName: "Customer Name", // In a real app, get from user profile
           customerAddress: deliveryAddress,
           customerPhone: contactNumber,
+          customerEmail: "customer@example.com", // Added customer email
           restaurantName: cartItems[0].restaurantName,
           restaurantAddress: "Restaurant Address", // In a real app, get from restaurant data
         }));

@@ -37,6 +37,7 @@ const CheckoutForm = () => {
     customerAddress:
       reduxOrder.customerAddress ?? fallbackOrder.customerAddress,
     customerPhone: reduxOrder.customerPhone ?? fallbackOrder.customerPhone,
+    customerEmail: reduxOrder.customerEmail ?? "john.doe@example.com",
     restaurantName: reduxOrder.restaurantName ?? fallbackOrder.restaurantName,
     restaurantAddress:
       reduxOrder.restaurantAddress ?? fallbackOrder.restaurantAddress,
@@ -61,6 +62,7 @@ const CheckoutForm = () => {
           card: elements.getElement(CardElement)!,
           billing_details: {
             name: orderDetails.customerName,
+            email: orderDetails.customerEmail,
             address: { line1: orderDetails.customerAddress },
             phone: orderDetails.customerPhone,
           },
@@ -207,6 +209,12 @@ const CheckoutForm = () => {
               <span className="text-gray-600">Name</span>
               <span className="font-medium text-gray-900">
                 {orderDetails.customerName}
+              </span>
+            </p>
+            <p className="flex justify-between">
+              <span className="text-gray-600">Email</span>
+              <span className="font-medium text-gray-900">
+                {orderDetails.customerEmail}
               </span>
             </p>
             <p className="flex justify-between">

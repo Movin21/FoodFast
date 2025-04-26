@@ -6,6 +6,7 @@ interface OrderState {
   customerName: string;
   customerAddress: string;
   customerPhone: string;
+  customerEmail: string;
   restaurantName: string;
   restaurantAddress: string;
 }
@@ -16,6 +17,7 @@ const initialState: OrderState = {
   customerName: "John Doe",
   customerAddress: "123 Main St, Colombo",
   customerPhone: "0771234567",
+  customerEmail: "john.doe@example.com",
   restaurantName: "Pizza House",
   restaurantAddress: "456 Market St, Colombo",
 };
