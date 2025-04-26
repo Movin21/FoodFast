@@ -1,13 +1,14 @@
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
-  try {
-    const connect = await mongoose.connect(process.env.CONNECTION_STRING);
-    console.log(`Restaurant Service Database Connection Successful`);
-  } catch (err) {
-    console.log(err);
-    process.exit(1);
-  }
+  await mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => {
+      console.log("MongoDB connected successfully");
+    })
+    .catch((error) => {
+      console.error("MongoDB connection error:", error);
+    });
 };
 
-module.exports = connectDB;
+module.exports = { connectDB };
