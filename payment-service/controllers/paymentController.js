@@ -5,7 +5,7 @@ dotenv.config();
 
 // Initialize Stripe with your secret key
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
-const Transaction = require("../models/Transaction");
+const Transaction = require("../models/Transaction.js");
 
 const createPaymentIntent = async (req, res) => {
   console.log("Received body:", req.body);
@@ -85,7 +85,7 @@ const createPaymentIntent = async (req, res) => {
     // Separate try/catch for delivery creation
     try {
       // Create delivery record
-      await axios.post("http://localhost:8000/api/delivery", {
+      await axios.post(`${process.env.DELIVERY_SERVICE_URL}/delivery`, {
         orderId,
         customerName,
         customerPhone,
@@ -167,7 +167,7 @@ const handleStripeWebhook = async (req, res) => {
 
       // Try to create delivery again as a fallback
       try {
-        await axios.post("http://localhost:8000/api/delivery", {
+        await axios.post(`${process.env.DELIVERY_SERVICE_URL}/delivery`, {
           orderId,
           customerName,
           customerPhone,
