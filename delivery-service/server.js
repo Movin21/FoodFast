@@ -2,7 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const http = require("http");
 const connectDB = require("./config/db");
-const cors = require('cors')
+const cors = require("cors");
 const { setupSocket } = require("./socket/socket");
 
 dotenv.config();

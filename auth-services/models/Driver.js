@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
-
 const DriverSchema = new mongoose.Schema({
+  driverId: {
+    type: String,
+    unique: true,
+    default: () => new mongoose.Types.ObjectId().toString(),
+  },
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
@@ -13,5 +17,4 @@ const DriverSchema = new mongoose.Schema({
     lng: { type: Number, default: 0 },
   },
 });
-
 module.exports = mongoose.model("Driver", DriverSchema);

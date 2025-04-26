@@ -1,8 +1,9 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { FacebookIcon, TwitterIcon, InstagramIcon } from 'lucide-react';
+import React from "react";
+import { Link } from "react-router-dom";
+import { FacebookIcon, TwitterIcon, InstagramIcon } from "lucide-react";
 const Footer: React.FC = () => {
-  return <footer className="bg-gray-900 text-gray-300">
+  return (
+    <footer className="bg-gray-900 text-gray-300">
       <div className="container mx-auto px-4 py-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
@@ -57,7 +58,7 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="#" className="hover:text-white">
+                <Link to="/order-status" className="hover:text-white">
                   Order Status
                 </Link>
               </li>
@@ -74,11 +75,11 @@ const Footer: React.FC = () => {
             </ul>
           </div>
           <div>
-            <h4 className="font-medium text-white mb-4">For Restaurants</h4>
+            <h4 className="font-medium text-white mb-4">Become a Partner</h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="#" className="hover:text-white">
-                  Become a Partner
+                <Link to="/driver/login" className="hover:text-white">
+                  Become a Driver
                 </Link>
               </li>
               <li>
@@ -108,6 +109,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
       </div>
-    </footer>;
+    </footer>
+  );
 };
 export default Footer;
