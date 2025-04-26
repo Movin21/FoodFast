@@ -1,6 +1,6 @@
 import { getAuthToken, removeAuthToken } from "./authService";
 
-const API_URL = "http://localhost:8000/api/restaurant/api/restaurant";
+const API_URL = "http://localhost:8000/api/restaurant";
 
 // Helper function for API calls with authentication
 const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {

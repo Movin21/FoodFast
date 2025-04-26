@@ -1,26 +1,27 @@
-import React from "react";
-import { Navigate, Outlet } from "react-router-dom";
-
-export const isAuthenticated = (): boolean => {
-  const token = localStorage.getItem("adminToken");
-
-  if (!token) {
-    return false;
-  }
-
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const isTokenExpired = payload.exp * 1000 < Date.now();
-    return !isTokenExpired;
-  } catch (error) {
-    console.error("Invalid token:", error);
-    return false;
-  }
-};
+import React, { useEffect } from "react";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../../redux/store";
+import { isAuthenticated } from "../../services/authService";
+import { logout } from "../../redux/slices/authSlice";
 
 const ProtectedRoute = () => {
-  if (!isAuthenticated()) {
-    return <Navigate to="/admin/login" replace />;
+  const { user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Check if token is valid
+  useEffect(() => {
+    if (user && !isAuthenticated()) {
+      // Token expired, log the user out
+      dispatch(logout());
+      navigate("/login", { replace: true });
+    }
+  }, [dispatch, navigate, user]);
+
+  // If not authenticated at all, redirect to login
+  if (!user || !isAuthenticated()) {
+    return <Navigate to="/login" replace />;
   }
 
   return <Outlet />;
