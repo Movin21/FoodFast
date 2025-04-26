@@ -61,7 +61,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/auth/${endpoint}`,
+        `http://localhost:8000/api/restaurant/auth/${endpoint}`,
         {
           method: "POST",
           headers: {
@@ -80,7 +80,19 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
       if (!response.ok) {
         console.log("Login failed:", data);
-        setErrorMessage(data.message || "Login failed");
+
+        // Handle admin approval needed error
+        if (
+          response.status === 403 &&
+          data.message === "Admin approval needed."
+        ) {
+          setErrorMessage(
+            "Your account is pending admin approval. Please wait for approval."
+          );
+        } else {
+          setErrorMessage(data.message || "Login failed");
+        }
+
         setIsLoading(false);
         return;
       }

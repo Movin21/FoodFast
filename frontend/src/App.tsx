@@ -1,14 +1,15 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
-import Header from "./components/Layout/Header";
 import Layout from "./components/Layout/Layout";
-import Footer from "./components/Layout/Footer";
+import RestaurantDashboardLayout from "./components/Layout/RestaurantDashboardLayout";
 import Home from "./pages/Home";
 import RestaurantDetail from "./pages/RestaurantDetail";
 import Checkout from "./pages/Checkout";
-import RestaurantDashboard from "./pages/RestaurantDashboard";
 import Login from "./components/auth/LoginForm";
+import AdminLogin from "./components/admin/AdminLogin";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import RestaurantDashboard from "./pages/RestaurantDashboard";
 import ProtectedRoute from "./components/routing/ProtectedRoute";
 import PaymentGateway from "./components/PaymentGateway";
 import DeliveryTrackingPage from "./components/DeliveryTracking";
@@ -17,16 +18,10 @@ import DriverRegister from "./components/auth/DriverRegsiter";
 import OrderSearch from "./components/OrderSearch";
 
 export function App() {
-  console.log("App rendering");
-
-  // Get current pathname
-  const pathname = window.location.pathname;
-  const hideFooterPaths = ["/restaurant/dashboard"];
-  const shouldShowFooter = !hideFooterPaths.includes(pathname);
-
   return (
     <BrowserRouter>
       <CartProvider>
+
         <div className="min-h-screen bg-gray-50 flex flex-col">
           {/* Global Header for all routes */}
           <Header />
@@ -50,20 +45,23 @@ export function App() {
                 <Route path="/driver/register" element={<DriverRegister />} />
               </Route>
 
-              {/* Protected Routes */}
-              <Route element={<ProtectedRoute />}>
-                <Route
-                  path="/restaurant/dashboard"
-                  element={<RestaurantDashboard />}
-                />
-                <Route path="/orders" element={<div>User Orders Page</div>} />
-              </Route>
-            </Routes>
-          </div>
 
-          {/* Only show footer on certain pages */}
-          {shouldShowFooter && <Footer />}
-        </div>
+          {/* Admin Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          </Route>
+
+          {/* Restaurant Dashboard Route */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<RestaurantDashboardLayout />}>
+              <Route
+                path="/restaurant/dashboard"
+                element={<RestaurantDashboard />}
+              />
+            </Route>
+          </Route>
+        </Routes>
       </CartProvider>
     </BrowserRouter>
   );

@@ -56,12 +56,12 @@ app.use(
 );
 // Placeholder for RESTAURANT service
 app.use(
-  "/api/restuarent",
+  "/api/restaurant/",
   createProxyMiddleware({
     target: process.env.RESTAURANT_SERVICE_URL,
     changeOrigin: true,
     pathRewrite: {
-      "^/api/restuarent": "/",
+      "^/api/restaurant/": "/",
     },
   })
 );
