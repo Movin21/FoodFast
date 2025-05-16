@@ -56,6 +56,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               >
                 Register your Restaurant
               </button>
+
+              {/* New Admin login button */}
+              <a
+                href="/admin/login"
+                onClick={onClose}
+                className="block w-full px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-full hover:bg-gray-100 transition-colors text-center"
+              >
+                Sign in as Admin
+              </a>
             </div>
           </div>
         </div>

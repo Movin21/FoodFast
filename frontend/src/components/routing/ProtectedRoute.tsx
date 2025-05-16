@@ -1,29 +1,21 @@
-import React, { useEffect } from "react";
-import { Navigate, Outlet, useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "../../redux/store";
-import { isAuthenticated } from "../../services/authService";
-import { logout } from "../../redux/slices/authSlice";
+import React from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 const ProtectedRoute = () => {
-  const { user } = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const location = useLocation();
+  const token = localStorage.getItem("adminToken");
 
-  // Check if token is valid
-  useEffect(() => {
-    if (user && !isAuthenticated()) {
-      // Token expired, log the user out
-      dispatch(logout());
-      navigate("/login", { replace: true });
-    }
-  }, [dispatch, navigate, user]);
+  // Debug the authentication check
+  console.log("ProtectedRoute check - Path:", location.pathname);
+  console.log("ProtectedRoute check - Token exists:", !!token);
 
-  // If not authenticated at all, redirect to login
-  if (!user || !isAuthenticated()) {
-    return <Navigate to="/login" replace />;
+  // If no token found, redirect to login
+  if (!token) {
+    return <Navigate to="/admin/login" replace />;
   }
 
+  // Token exists, allow access
+  console.log("ProtectedRoute - Access granted to:", location.pathname);
   return <Outlet />;
 };
 

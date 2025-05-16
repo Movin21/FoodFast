@@ -9,6 +9,8 @@ const AdminLogin: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
     try {
       const response = await fetch(
         "http://localhost:8000/api/restaurant/admin/auth/login",
@@ -21,13 +23,24 @@ const AdminLogin: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        localStorage.setItem("adminToken", data.token); // Save token to localStorage
-        navigate("/admin/dashboard"); // Redirect to admin dashboard
+        console.log("Login successful, token received");
+
+        // Save token to localStorage
+        localStorage.setItem("adminToken", data.token);
+        console.log(
+          "Token saved successfully:",
+          !!localStorage.getItem("adminToken")
+        );
+
+        // Force a hard navigation to bypass any potential React Router issues
+        window.location.href = "/admin/dashboard";
       } else {
         const errorData = await response.json();
+        console.error("Login failed:", errorData);
         setError(errorData.message || "Login failed");
       }
     } catch (err) {
+      console.error("Login error:", err);
       setError("An error occurred. Please try again.");
     }
   };
@@ -80,7 +93,7 @@ const AdminLogin: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="w-full bg-gray-700 text-white py-2 px-4 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Login
           </button>
