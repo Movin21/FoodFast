@@ -9,12 +9,12 @@ const sendNotification = async (req, res) => {
   let emailSent = false;
   let smsSent = false;
 
-  // Attempt to send email
+  // Send email
   try {
     await emailTransporter.sendMail({
-      from: process.env.MAILGUN_FROM,
+      from: process.env.GMAIL_USER,
       to: toEmail,
-      subject: subject,
+      subject,
       text: message,
     });
     emailSent = true;
@@ -22,8 +22,8 @@ const sendNotification = async (req, res) => {
     console.error("Email failed:", error.message);
   }
 
-  // Attempt to send SMS
-  try {
+  // Send SMS
+  /*try {
     await smsClient.messages.create({
       body: message,
       from: process.env.TWILIO_PHONE,
@@ -33,8 +33,8 @@ const sendNotification = async (req, res) => {
   } catch (error) {
     console.error("SMS failed:", error.message);
   }
-
-  // Response based on results
+*/
+  // Respond
   if (emailSent || smsSent) {
     res.status(200).json({
       message: `Notification status - Email: ${

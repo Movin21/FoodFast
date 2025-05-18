@@ -1,13 +1,11 @@
 const nodemailer = require("nodemailer");
-const dotenv = require("dotenv");
-dotenv.config();
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.mailgun.org",
-  port: 587,
+  service: "gmail",
   auth: {
-    user: process.env.MAILGUN_USER,
-    pass: process.env.MAILGUN_PASS,
+    user: process.env.GMAIL_USER, // your Gmail address
+    pass: process.env.GMAIL_PASS, // your Gmail app password
   },
 });
+
 module.exports = transporter;
