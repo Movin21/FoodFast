@@ -48,7 +48,11 @@ services:
       - JWT_SECRET=secret
       - MONGO_URI=mongodb+srv://yasaslakmina:1234@cluster001.lpmptt6.mongodb.net/food-ordering-app?retryWrites=true&w=majority&appName=Cluster001
 
-  # Order Service
+    networks:
+      - app-network
+
+
+  #Order Service
   # order-service:
   #   build: ./order-service
   #   ports:
