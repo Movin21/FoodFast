@@ -13,11 +13,11 @@ interface OrderState {
 
 const initialState: OrderState = {
   amount: 2000,
-  orderId: "ORDER00123",
+  orderId: "ORDER5462",
   customerName: "John Doe",
   customerAddress: "Kadawatha",
   customerPhone: "+94771234567",
-  customerEmail: "movin@gmaill.com",
+  customerEmail: "movinliyanage@gmaill.com",
   restaurantName: "Pizza House",
   restaurantAddress: "Kiribathgoda",
 };
